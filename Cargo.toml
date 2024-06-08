@@ -1,0 +1,10 @@
+[package]
+name = "rustshockbot"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serenity = { version = "0.12", default-features = false, features = ["client", "gateway", "rustls_backend", "model"] }
+tokio = { version = "1.21.2", features = ["macros", "rt-multi-thread"] }
+poise = "0.6.1"
+dotenv = "0.15.0"
