@@ -8,8 +8,7 @@ type Context<'a> = poise::Context<'a, Data, Error>;
 #[poise::command(slash_command)]
 async fn shock(
     ctx: Context<'_>,
-    #[description = "user to vibrate"]
-    user: serenity::User,
+    #[description = "user to vibrate"] user: serenity::User,
     #[description = "strength of shock, from 1 - 100%"]
     #[min = 1]
     #[max = 100]
@@ -29,8 +28,7 @@ async fn shock(
 #[poise::command(slash_command)]
 async fn vibrate(
     ctx: Context<'_>,
-    #[description = "user to vibrate"]
-    user: serenity::User,
+    #[description = "user to vibrate"] user: serenity::User,
     #[description = "strength of vibration, from 1 - 100%"]
     #[min = 1]
     #[max = 100]
@@ -50,8 +48,7 @@ async fn vibrate(
 #[poise::command(slash_command)]
 async fn beep(
     ctx: Context<'_>,
-    #[description = "user to beep"]
-    user: serenity::User,
+    #[description = "user to beep"] user: serenity::User,
 ) -> Result<(), Error> {
     let response = format!("Beeping <@{}>", user.id);
     ctx.say(response).await?;
