@@ -10,11 +10,11 @@ async fn shock(
     ctx: Context<'_>,
     #[description = "user to vibrate"]
     user: serenity::User,
-    #[description = "strength of shock, from 1 - 10%"]
+    #[description = "strength of shock, from 1 - 100%"]
     #[min = 1]
-    #[max = 10]
+    #[max = 100]
     strength: Option<u8>,
-    #[description = "duration of shock, from 300 - 1,000 ms"]
+    #[description = "duration of shock, from 300 - 30,000 ms"]
     #[min = 300]
     #[max = 1000]
     duration: Option<u16>,
@@ -31,11 +31,11 @@ async fn vibrate(
     ctx: Context<'_>,
     #[description = "user to vibrate"]
     user: serenity::User,
-    #[description = "strength of vibration, from 1 - 99%"]
+    #[description = "strength of vibration, from 1 - 100%"]
     #[min = 1]
-    #[max = 99]
+    #[max = 100]
     strength: Option<u8>,
-    #[description = "duration of vibration, from 300 - 2,000 ms"]
+    #[description = "duration of vibration, from 300 - 30,000 ms"]
     #[min = 300]
     #[max = 2000]
     duration: Option<u16>,
