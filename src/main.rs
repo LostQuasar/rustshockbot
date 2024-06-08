@@ -5,7 +5,7 @@ struct Data {}
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
-#[poise::command(slash_command, prefix_command)]
+#[poise::command(slash_command)]
 async fn shock(
     ctx: Context<'_>,
     #[description = "user to vibrate"]
@@ -26,7 +26,7 @@ async fn shock(
     Ok(())
 }
 
-#[poise::command(slash_command, prefix_command)]
+#[poise::command(slash_command)]
 async fn vibrate(
     ctx: Context<'_>,
     #[description = "user to vibrate"]
@@ -47,7 +47,7 @@ async fn vibrate(
     Ok(())
 }
 
-#[poise::command(slash_command, prefix_command)]
+#[poise::command(slash_command)]
 async fn beep(
     ctx: Context<'_>,
     #[description = "user to beep"]
