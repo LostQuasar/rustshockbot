@@ -13,14 +13,15 @@ async fn shock(
     #[description = "strength of shock, from 1 - 10%"]
     #[min = 1]
     #[max = 10]
-    strength: u8,
+    strength: Option<u8>,
     #[description = "duration of shock, from 300 - 1,000 ms"]
     #[min = 300]
     #[max = 1000]
     duration: Option<u16>,
 ) -> Result<(), Error> {
+    let str = strength.unwrap_or_else(|| 2);
     let dur = duration.unwrap_or_else(|| 300);
-    let response = format!("Shocking <@{}> at {}% for {}ms", user.id, strength, dur);
+    let response = format!("Shocking <@{}> at {}% for {}ms", user.id, str, dur);
     ctx.say(response).await?;
     Ok(())
 }
@@ -33,14 +34,15 @@ async fn vibrate(
     #[description = "strength of vibration, from 1 - 99%"]
     #[min = 1]
     #[max = 99]
-    strength: u8,
+    strength: Option<u8>,
     #[description = "duration of vibration, from 300 - 2,000 ms"]
     #[min = 300]
     #[max = 2000]
     duration: Option<u16>,
 ) -> Result<(), Error> {
+    let str = strength.unwrap_or_else(|| 10);
     let dur = duration.unwrap_or_else(|| 300);
-    let response = format!("Vibrating <@{}> at {}% for {}ms", user.id, strength, dur);
+    let response = format!("Vibrating <@{}> at {}% for {}ms", user.id, str, dur);
     ctx.say(response).await?;
     Ok(())
 }
