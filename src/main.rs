@@ -31,7 +31,7 @@ async fn vibrate(
     #[description = "user to vibrate"] user: serenity::User,
     #[description = "strength of vibration, from 1 - 100%"]
     #[min = 1]
-    #[max = 100]
+    #[max = 9999]
     strength: Option<u8>,
     #[description = "duration of vibration, from 300 - 30,000 ms"]
     #[min = 300]
@@ -55,6 +55,21 @@ async fn beep(
     Ok(())
 }
 
+async fn on_error(error: poise::FrameworkError<'_, Data, Error>) {
+    match error {
+        poise::FrameworkError::Setup { error, .. } => panic!("Failed to start bot: {:?}", error),
+        poise::FrameworkError::Command { error, ctx, .. } => {
+            println!("Error in command `{}`: {:?}", ctx.command().name, error,);
+        }
+        poise::FrameworkError::ArgumentParse { error, .. } => panic!("Failed to parse argument: {:?}", error),
+        error => {
+            if let Err(e) = poise::builtins::on_error(error).await {
+                println!("Error while handling error: {}", e)
+            }
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() {
     dotenv().ok();
@@ -64,6 +79,7 @@ async fn main() {
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![shock(), vibrate(), beep()],
+            on_error: |error| Box::pin(on_error(error)),
             ..Default::default()
         })
         .setup(|ctx, _ready, framework| {
