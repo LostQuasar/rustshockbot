@@ -31,7 +31,7 @@ async fn vibrate(
     #[description = "user to vibrate"] user: serenity::User,
     #[description = "strength of vibration, from 1 - 100%"]
     #[min = 1]
-    #[max = 9999]
+    #[max = 100]
     strength: Option<u8>,
     #[description = "duration of vibration, from 300 - 30,000 ms"]
     #[min = 300]
@@ -61,7 +61,7 @@ async fn on_error(error: poise::FrameworkError<'_, Data, Error>) {
         poise::FrameworkError::Command { error, ctx, .. } => {
             println!("Error in command `{}`: {:?}", ctx.command().name, error,);
         }
-        poise::FrameworkError::ArgumentParse { error, .. } => panic!("Failed to parse argument: {:?}", error),
+        poise::FrameworkError::CommandStructureMismatch { description, ctx, .. } => panic!("Command structure mismatch: {:?} in command {}", description, ctx.command().name),
         error => {
             if let Err(e) = poise::builtins::on_error(error).await {
                 println!("Error while handling error: {}", e)
