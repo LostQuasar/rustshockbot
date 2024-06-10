@@ -25,7 +25,7 @@ pub mod data_types {
         pub is_paused: bool,
         pub created_on: String,
         pub id: String,
-        pub rf_id: i32,
+        pub rf_id: u32,
         pub model: ShockerModel,
     }
 

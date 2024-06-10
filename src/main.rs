@@ -1,6 +1,6 @@
 pub mod data_types;
 
-use data_types::data_types::{ControlRequest, ControlType, ListShockersBaseResponse, Shock};
+use data_types::data_types::{ControlRequest, ControlType, ListShockersBaseResponse, ListShockersResponse, Shock};
 use dotenv::dotenv;
 use reqwest::{header, Client};
 use std::error::Error;
@@ -10,7 +10,7 @@ async fn post_control_request(
     api_url: &str,
     id: String,
     control_type: ControlType,
-) -> Result<reqwest::Response, reqwest::Error> {
+) -> Result<reqwest::Response, Box<dyn Error>> {
     let control_request = serde_json::to_string(&ControlRequest {
         shocks: vec![Shock {
             id: id,
@@ -28,26 +28,25 @@ async fn post_control_request(
         .body(control_request)
         .send()
         .await?;
-    resp.error_for_status()
+    Ok(resp.error_for_status()?)
 }
 
 async fn get_shockers_own(
     client: &Client,
     api_url: &str,
-) -> Result<reqwest::Response, reqwest::Error> {
-    let resp = client
-        .get(format!("{api_url}/1/shockers/own"))
-        .send()
-        .await?;
-    resp.error_for_status()
+) ->  Result<Option<Vec<ListShockersResponse>>, Box<dyn Error>> {
+    let resp = client.get(format!("{api_url}/1/shockers/own")).send().await;
+    let list_shockers_response: ListShockersBaseResponse =
+        serde_json::from_str(resp?.text().await?.as_str())?;
+    Ok(list_shockers_response.data)
 }
 
-fn handle_err<T: Error>(err: T) {
+fn handle_err(err: &Box<dyn Error>) {
     println!("Error: {}", err)
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main(){
     dotenv().ok();
     let openshock_token = dotenv::var("OPENSHOCK_TOKEN").expect("missing OPENSHOCK_TOKEN");
     let api_url = "https://api.shocklink.net";
@@ -68,7 +67,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let client = reqwest::Client::builder()
         .default_headers(headers)
-        .build()?;
+        .build().expect("err");
 
     let resp = get_shockers_own(&client, api_url).await;
     match &resp {
@@ -77,22 +76,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
             handle_err(err);
         }
     }
-    let shocker_list_response: ListShockersBaseResponse =
-        serde_json::from_str(&resp.unwrap().text().await?.as_str())
-            .expect("Data should be able to decoded");
-    let shocker_list = shocker_list_response.data.expect("ListShockersBaseResponse should contain data if request was Ok");
 
     let resp = post_control_request(
         &client,
         api_url,
-        shocker_list[0].shockers[0].id.to_string(),
+        resp.unwrap().unwrap()[0].shockers[0].id.to_string(),
         ControlType::Sound,
     )
     .await;
     match resp {
         Ok(_) => {}
-        Err(err) => handle_err(err),
+        Err(err) => handle_err(&err),
     }
-
-    Ok(())
 }
