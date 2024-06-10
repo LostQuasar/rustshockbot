@@ -38,13 +38,12 @@ async fn get_shockers_own(
     let resp = client
         .get(format!("{api_url}/1/shockers/own"))
         .send()
-        .await?;    
+        .await?;
     resp.error_for_status()
 }
 
-
-fn handle_err<T: Error>(err: T){
-    println!("Error: {}",err)
+fn handle_err<T: Error>(err: T) {
+    println!("Error: {}", err)
 }
 
 #[tokio::main]
@@ -72,24 +71,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .build()?;
 
     let resp = get_shockers_own(&client, api_url).await;
-    match resp {
-        Ok(res) => {
-            let list_shockers_base_response: Result<ListShockersBaseResponse, serde_json::Error> =
-            serde_json::from_str(&res.text().await?.as_str());
-            match list_shockers_base_response {
-                Ok(list_shockers) => {
-                    println!("{}", list_shockers.data.unwrap()[0].shockers[0].id)
-                },
-                Err(err) => handle_err(err),
-            }
-        },
-        Err(err) => handle_err(err),
+    match &resp {
+        Ok(_) => {}
+        Err(err) => {
+            handle_err(err);
+        }
     }
+    let shocker_list = if !&resp.is_err() {
+        let shocker_list_response: ListShockersBaseResponse =
+            serde_json::from_str(&resp.unwrap().text().await?.as_str())
+                .expect("Data should be able to decoded");
+        shocker_list_response.data
+    } else {
+        None
+    }.unwrap();
 
     let resp = post_control_request(
         &client,
         api_url,
-        "7d58da06-a8d4-4f8d-93e7-d7e5259b7315".to_string(),
+        shocker_list[0].shockers[0].id.to_string(),
         ControlType::Sound,
     )
     .await;
@@ -97,7 +97,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Ok(_) => {}
         Err(err) => handle_err(err),
     }
-
 
     Ok(())
 }
