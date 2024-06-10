@@ -1,97 +1,103 @@
+pub mod data_types;
+
+use data_types::data_types::{ControlRequest, ControlType, ListShockersBaseResponse, Shock};
 use dotenv::dotenv;
-use poise::serenity_prelude as serenity;
+use reqwest::{header, Client};
+use std::error::Error;
 
-struct Data {}
-type Error = Box<dyn std::error::Error + Send + Sync>;
-type Context<'a> = poise::Context<'a, Data, Error>;
+async fn post_control_request(
+    client: &Client,
+    api_url: &str,
+    id: String,
+    control_type: ControlType,
+) -> Result<reqwest::Response, reqwest::Error> {
+    let control_request = serde_json::to_string(&ControlRequest {
+        shocks: vec![Shock {
+            id: id,
+            control_type: control_type,
+            intensity: 1,
+            duration: 300,
+            exclusive: true,
+        }],
+        custom_name: "rusty".to_string(),
+    })
+    .unwrap();
 
-#[poise::command(slash_command)]
-async fn shock(
-    ctx: Context<'_>,
-    #[description = "user to vibrate"] user: serenity::User,
-    #[description = "strength of shock, from 1 - 100%"]
-    #[min = 1]
-    #[max = 100]
-    strength: Option<u8>,
-    #[description = "duration of shock, from 300 - 30,000 ms"]
-    #[min = 300]
-    #[max = 1000]
-    duration: Option<u16>,
-) -> Result<(), Error> {
-    let str = strength.unwrap_or_else(|| 2);
-    let dur = duration.unwrap_or_else(|| 300);
-    let response = format!("Shocking <@{}> at {}% for {}ms", user.id, str, dur);
-    ctx.say(response).await?;
-    Ok(())
+    let resp = client
+        .post(format!("{api_url}/2/shockers/control"))
+        .body(control_request)
+        .send()
+        .await?;
+    resp.error_for_status()
 }
 
-#[poise::command(slash_command)]
-async fn vibrate(
-    ctx: Context<'_>,
-    #[description = "user to vibrate"] user: serenity::User,
-    #[description = "strength of vibration, from 1 - 100%"]
-    #[min = 1]
-    #[max = 100]
-    strength: Option<u8>,
-    #[description = "duration of vibration, from 300 - 30,000 ms"]
-    #[min = 300]
-    #[max = 2000]
-    duration: Option<u16>,
-) -> Result<(), Error> {
-    let str = strength.unwrap_or_else(|| 10);
-    let dur = duration.unwrap_or_else(|| 300);
-    let response = format!("Vibrating <@{}> at {}% for {}ms", user.id, str, dur);
-    ctx.say(response).await?;
-    Ok(())
+async fn get_shockers_own(
+    client: &Client,
+    api_url: &str,
+) -> Result<reqwest::Response, reqwest::Error> {
+    let resp = client
+        .get(format!("{api_url}/1/shockers/own"))
+        .send()
+        .await?;    
+    resp.error_for_status()
 }
 
-#[poise::command(slash_command)]
-async fn beep(
-    ctx: Context<'_>,
-    #[description = "user to beep"] user: serenity::User,
-) -> Result<(), Error> {
-    let response = format!("Beeping <@{}>", user.id);
-    ctx.say(response).await?;
-    Ok(())
-}
 
-async fn on_error(error: poise::FrameworkError<'_, Data, Error>) {
-    match error {
-        poise::FrameworkError::Setup { error, .. } => panic!("Failed to start bot: {:?}", error),
-        poise::FrameworkError::Command { error, ctx, .. } => {
-            println!("Error in command `{}`: {:?}", ctx.command().name, error,);
-        }
-        poise::FrameworkError::CommandStructureMismatch { description, ctx, .. } => panic!("Command structure mismatch: {:?} in command {}", description, ctx.command().name),
-        error => {
-            if let Err(e) = poise::builtins::on_error(error).await {
-                println!("Error while handling error: {}", e)
-            }
-        }
-    }
+fn handle_err<T: Error>(err: T){
+    println!("Error: {}",err)
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().ok();
-    let token = dotenv::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN");
-    let intents = serenity::GatewayIntents::non_privileged();
+    let openshock_token = dotenv::var("OPENSHOCK_TOKEN").expect("missing OPENSHOCK_TOKEN");
+    let api_url = "https://api.shocklink.net";
 
-    let framework = poise::Framework::builder()
-        .options(poise::FrameworkOptions {
-            commands: vec![shock(), vibrate(), beep()],
-            on_error: |error| Box::pin(on_error(error)),
-            ..Default::default()
-        })
-        .setup(|ctx, _ready, framework| {
-            Box::pin(async move {
-                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                Ok(Data {})
-            })
-        })
-        .build();
+    let mut headers = header::HeaderMap::new();
+    headers.insert(
+        "Content-type",
+        header::HeaderValue::from_static("application/json"),
+    );
+    headers.insert(
+        "accept",
+        header::HeaderValue::from_static("application/json"),
+    );
+    headers.insert(
+        "OpenShockToken",
+        header::HeaderValue::from_str(&openshock_token).unwrap(),
+    );
 
-    let client = serenity::ClientBuilder::new(token, intents)
-        .framework(framework)
-        .await;
-    client.unwrap().start().await.unwrap();
+    let client = reqwest::Client::builder()
+        .default_headers(headers)
+        .build()?;
+
+    let resp = get_shockers_own(&client, api_url).await;
+    match resp {
+        Ok(res) => {
+            let list_shockers_base_response: Result<ListShockersBaseResponse, serde_json::Error> =
+            serde_json::from_str(&res.text().await?.as_str());
+            match list_shockers_base_response {
+                Ok(list_shockers) => {
+                    println!("{}", list_shockers.data.unwrap()[0].shockers[0].id)
+                },
+                Err(err) => handle_err(err),
+            }
+        },
+        Err(err) => handle_err(err),
+    }
+
+    let resp = post_control_request(
+        &client,
+        api_url,
+        "7d58da06-a8d4-4f8d-93e7-d7e5259b7315".to_string(),
+        ControlType::Sound,
+    )
+    .await;
+    match resp {
+        Ok(_) => {}
+        Err(err) => handle_err(err),
+    }
+
+
+    Ok(())
 }
