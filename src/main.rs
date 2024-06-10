@@ -77,14 +77,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
             handle_err(err);
         }
     }
-    let shocker_list = if !&resp.is_err() {
-        let shocker_list_response: ListShockersBaseResponse =
-            serde_json::from_str(&resp.unwrap().text().await?.as_str())
-                .expect("Data should be able to decoded");
-        shocker_list_response.data
-    } else {
-        None
-    }.unwrap();
+    let shocker_list_response: ListShockersBaseResponse =
+        serde_json::from_str(&resp.unwrap().text().await?.as_str())
+            .expect("Data should be able to decoded");
+    let shocker_list = shocker_list_response.data.expect("ListShockersBaseResponse should contain data if request was Ok");
 
     let resp = post_control_request(
         &client,
