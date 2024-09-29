@@ -1,6 +1,6 @@
 use dotenv::dotenv;
 use poise::serenity_prelude as serenity;
-use rzap::{api::OpenShockAPI, data_type::ControlType};
+use rzap::{api::{OpenShockAPI, OpenShockAPIBuilder}, data_type::ControlType};
 
 struct Data {
     openshock: OpenShockAPI,
@@ -91,10 +91,16 @@ async fn on_error(error: poise::FrameworkError<'_, Data, Error>) {
 async fn main() {
     dotenv().ok();
     let discord_token = dotenv::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN");
-    let openshock_key = dotenv::var("OPENSHOCK_KEY").expect("missing OPENSHOCK_KEY");
+    let openshock_token = dotenv::var("OPENSHOCK_TOKEN").expect("missing OPENSHOCK_TOKEN");
     let test_id = dotenv::var("TEST_ID").expect("missing TEST_ID");
+    let app_name = env!("CARGO_PKG_NAME");
+    let app_version = env!("CARGO_PKG_VERSION");
     let intents = serenity::GatewayIntents::non_privileged();
-    let openshock = OpenShockAPI::new(None, openshock_key);
+    let openshock = OpenShockAPIBuilder::new()
+        .with_app(app_name.to_string(), Some(app_version.to_string()))
+        .with_default_api_token(openshock_token)
+        .build()
+        .unwrap();
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {

@@ -8,4 +8,4 @@ serenity = { version = "0.12", default-features = false, features = ["client", "
 tokio = { version = "1.21.2", features = ["macros", "rt-multi-thread"] }
 poise = "0.6.1"
 dotenv = "0.15.0"
-rzap = "0.1.0"
+rzap = "0.2.0"
